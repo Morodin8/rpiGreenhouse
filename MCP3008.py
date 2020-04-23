@@ -20,6 +20,7 @@
 # under the License.
 
 from config import SETTINGS
+import utils
 import pigpio
 
 def read_MCP3008(pi, adc, channel):
@@ -39,7 +40,7 @@ def readSensor(pi, adc, sensor):
         log.append(m)
         v += m
     v /= 10.0
-    value += v
+    value += round(v, 1)
     print("readings: {}, average: {}".format(log, value))
     return value
 
@@ -69,7 +70,7 @@ def readMoisture(pi):
                 # failed to get moisture reading
                 return 0
 
-        return (total / float(len(SETTINGS["SENSORS"])))
+        return round(total / float(len(SETTINGS["SENSORS"])), 1)
    
     finally:
         pi.spi_close(adc)

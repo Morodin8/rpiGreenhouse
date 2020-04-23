@@ -72,7 +72,7 @@ class sensor:
 
    def _datum(self):
       if self._status == DHT_TIMEOUT:
-         print("Status = DHT_TIMEOUT. Use last values - lastStatus: {}, lastTemperature: {}, lastHumidity: {}".format(self._lastStatus, self._lastTemperature, self._lastHumidity))
+         print("Status: DHT_TIMEOUT. Use last values - lastStatus: {}, lastTemperature: {}, lastHumidity: {}".format(self._lastStatus, self._lastTemperature, self._lastHumidity))
          self._status = self._lastStatus
          self._temperature = self._lastTemperature
          self._humidity = self._lastHumidity

@@ -49,15 +49,17 @@ def calcPulseWidth(angle, servoRotation):
         
     return pulseWidth
 
-def safeSetPulseWidth(width):
+def safeSetPulseWidth(pi, servo, width):
     if (width < SETTINGS["SERVO_MIN_WIDTH"]):
         print("Cannot set below {}. Width: {}".format(SETTINGS["SERVO_MIN_WIDTH"], width))
-        return SETTINGS["SERVO_ZERO_DEGREES"]
+        setWidth = SETTINGS["SERVO_ZERO_DEGREES"]
     elif (width > SETTINGS["SERVO_MAX_WIDTH"]):
         print("Cannot set above {}. Width: {}".format(SETTINGS["SERVO_MAX_WIDTH"], width))
-        return SETTINGS["SERVO_ZERO_DEGREES"]
+        setWidth = SETTINGS["SERVO_ZERO_DEGREES"]
     else:
-        return width
+        setWidth = width
+
+    pi.set_servo_pulsewidth(servo["GPIO"], setWidth)
         
 def setCurrentWidth(isClose, currentWidth, servo):
     if isClose:

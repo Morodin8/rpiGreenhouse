@@ -1,0 +1,9 @@
+/home/pi/log/greenhouse.log {
+    daily
+    missingok
+    rotate 10
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+}

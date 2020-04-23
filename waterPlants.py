@@ -29,7 +29,10 @@ pi = pigpio.pi()
 
 def measureMoisture():
     pump = SETTINGS["PUMP"]
-    average = MCP3008.readMoisture(pi)
+    try:
+        average = MCP3008.readMoisture(pi)
+    except:
+        average = 0
         
     if average > 0:
         average = round(average, 2)
