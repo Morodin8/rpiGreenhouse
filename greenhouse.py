@@ -41,7 +41,10 @@ pi = pigpio.pi()
 
 def measureMoisture():
     if SETTINGS["OPERATE_FROM"] <= timestamp.hour < SETTINGS["OPERATE_UNTIL"]:
-        average = MCP3008.readMoisture(pi)
+        try:
+            average = MCP3008.readMoisture(pi)
+        except:
+            average = 0
 
         if average == 0:
             utils.turnOffLeds(pi)
@@ -50,8 +53,8 @@ def measureMoisture():
         return average
     else:
         utils.turnOffLeds(pi)
-        return 0
-    
+        return "not read"
+
 def operateWindow(isClose, servo):
     if not pi.connected:
         print("Failed to connect to pigpio. Leaving window\n")
@@ -61,10 +64,10 @@ def operateWindow(isClose, servo):
         angle = servo["CLOSE_ANGLE"]
     else:
         angle = servo["OPEN_ANGLE"]
-        
+
     print("{} GPIO: {}, Angle: {}".format(servo["NAME"], servo["GPIO"], angle))
     pulseWidth = servoUtils.calcPulseWidth(angle, servo["ROTATION"])
-    
+
     if (pulseWidth == 0):
         print("Trying to turn servo beyond it's limit, Leaving window.")
     else:
@@ -76,26 +79,22 @@ def operateWindow(isClose, servo):
 
         except:
             currentWidth = servoUtils.setCurrentWidth(isClose, 0, servo)
-            width = servoUtils.safeSetPulseWidth(currentWidth)
-            pi.set_servo_pulsewidth(servo["GPIO"], width)
-        
+            servoUtils.safeSetPulseWidth(pi, servo, currentWidth)
+
         if currentWidth < pulseWidth:
             inc = SETTINGS["SERVO_INCREMENT"]
         else:
             inc = SETTINGS["SERVO_INCREMENT"] * -1
-        
-        setWidth = currentWidth
-        print("setWidth: {}, pulseWidth: {}, inc: {}".format(setWidth, pulseWidth, inc))
 
-        while (pulseWidth > setWidth and inc > 0) or (pulseWidth < setWidth and inc < 0):    
-            width = servoUtils.safeSetPulseWidth(setWidth)
-            pi.set_servo_pulsewidth(servo["GPIO"], width)
+        setWidth = currentWidth
+        print("setWidth: {}, pulseWidth: {}, inc: {}\n".format(setWidth, pulseWidth, inc))
+
+        while (pulseWidth > setWidth and inc > 0) or (pulseWidth < setWidth and inc < 0):
+            servoUtils.safeSetPulseWidth(pi, servo, setWidth)
             setWidth += inc
             time.sleep(0.05)
-        
-        print("set width to {}\n".format(pulseWidth))
-        width = servoUtils.safeSetPulseWidth(pulseWidth)
-        pi.set_servo_pulsewidth(servo["GPIO"], width)
+
+        servoUtils.safeSetPulseWidth(pi, servo, pulseWidth)
 
 def shouldCloseWindow(temperature):
     openWindow = False
@@ -103,10 +102,10 @@ def shouldCloseWindow(temperature):
 
     if timestamp.hour < SETTINGS["THRESHOLD_HOUR"]:
         ampmThreshold = float(windowThreshold[0])
-        print("Hour = {}. Use AM temperature: {}".format(timestamp.hour, ampmThreshold))
     else:
         ampmThreshold = float(windowThreshold[1])
-        print("Hour = {}. Use PM temperature: {}".format(timestamp.hour, ampmThreshold))
+
+    print("THRESHOLD_HOUR: {}, hour: {}. Use {:g}*C threshold".format(SETTINGS["THRESHOLD_HOUR"], timestamp.hour, ampmThreshold))
 
     if temperature >= ampmThreshold:
         return openWindow
@@ -114,7 +113,7 @@ def shouldCloseWindow(temperature):
         if timestamp.month == SETTINGS["TRIX_MONTH"]:
             if SETTINGS["TRIX_HOUR_OPEN"] <= timestamp.hour <= SETTINGS["TRIX_HOUR_CLOSE"]:
                 if temperature >= SETTINGS["TRIX_THRESHOLD"]:
-                    print("trix open window temperature: {}".format(SETTINGS["TRIX_THRESHOLD"]))
+                    print("trix open window at{:g}*C".format(SETTINGS["TRIX_THRESHOLD"]))
                     utils.blinkLed(pi, SETTINGS["TEMP_LED"], 30, 0.1)
                     return openWindow
     
@@ -131,30 +130,30 @@ def operateFan(temperature):
         pi.write(SETTINGS["FAN_GPIO"], 0)
 
 def readTemperature(retry):
-    def output_data(timestamp, temperature, humidity):
-        date = datetime.datetime.fromtimestamp(timestamp).replace(microsecond=0).isoformat()
-        print(u"Date: {:s}, Temperature: {:g}*C, Humidity: {:g}%\n".format(date, temperature, humidity))
+    def output_data(dtStamp, temperature, humidity):
+        date = datetime.datetime.fromtimestamp(dtStamp).isoformat()
+        print("Date: {}, Temperature: {:g}*C, Humidity: {:g}%\n".format(date, temperature, humidity))
         return [True, date, temperature, humidity]
 
     def readWithRetry(retry, reads):
         override = False
         while reads > 0:
             try:
-                timestamp, gpio, status, temperature, humidity = sensor.read(override)   #read DHT device
+                dtStamp, gpio, status, temperature, humidity = sensor.read(override)   #read DHT device
                 if(status == DHT.DHT_TIMEOUT):  # no response from sensor
                     print("Error: DHT_TIMEOUT no response from sensor, retry {}".format(retry))
                     break
                 if(status == DHT.DHT_GOOD):
-                    return output_data(timestamp, temperature, humidity) # Return after successful read
+                    return output_data(dtStamp, temperature, humidity) # Return after successful read
                 time.sleep(2)
                 reads -=1
                 if reads > 1:
-                    print("Read {} failed to get a reading, retrying. Status: {}".format(reads, status))
+                    print("Status: {} - Failed to get a reading, reads remaining: {}.".format(status, reads))
                 elif reads == 1:
-                    print("Read {} failed to get reading, retrying with override. Status: {}".format(reads, status))
+                    print("Status: {} - Failed to get reading, reading with override.".format(status, reads))
                     override = True
                 else:
-                    print("Read {} failed to get reading after retrying. Status: {}".format(reads, status))
+                    print("Status: {} - Failed to get reading, retry: {}".format(status, retry))
             except KeyboardInterrupt:
                 break
 
@@ -169,11 +168,11 @@ def readTemperature(retry):
     return readWithRetry(True, 5)
 
 def regulateTemperature():
-    if SETTINGS["OPERATE_FROM"] <= timestamp.hour < SETTINGS["OPERATE_UNTIL"]:
-        print("DHT_SENSOR: {}, DHT_GPIO: {}, WINDOW_THRESHOLD: {}, FAN_THRESHOLD: {}".format(SETTINGS["DHT_SENSOR"], SETTINGS["DHT_GPIO"], windowThreshold, fanThreshold))
-        # read temperature, set retry to true to try twice    
-        valid, date, temperature, humidity = readTemperature(True)
+    print("DHT_SENSOR: {}, DHT_GPIO: {}, WINDOW_THRESHOLD: {}, FAN_THRESHOLD: {}".format(SETTINGS["DHT_SENSOR"], SETTINGS["DHT_GPIO"], windowThreshold, fanThreshold))
+    # read temperature, set retry to true to try twice
+    valid, date, temperature, humidity = readTemperature(True)
 
+    if SETTINGS["OPERATE_FROM"] <= timestamp.hour < SETTINGS["OPERATE_UNTIL"]:
         if valid:
             for servo in SETTINGS["SERVOS"]:
                 if shouldCloseWindow(temperature):
@@ -188,39 +187,39 @@ def regulateTemperature():
                     operateWindow(False, servo)
 
             operateFan(temperature)
-            return temperature
-                    
         else:
             print("Failed to get reading. Leaving window & fan\n")
             pi.set_mode(SETTINGS["TEMP_LED"], pigpio.OUTPUT)
             pi.write(SETTINGS["TEMP_LED"], 1)
 
-    elif timestamp.hour == SETTINGS["OPERATE_UNTIL"]:
-        # close window
+    elif timestamp.hour == SETTINGS["OPERATE_UNTIL"] and timestamp.minute < 10:
+        # close window ...
         for servo in SETTINGS["SERVOS"]:
-            print("close window for the night {}".format(servo["NAME"]))
+            print("close window {} ...".format(servo["NAME"]))
             utils.blinkLed(pi, SETTINGS["TEMP_LED"], 10, 0.2)
             operateWindow(True, servo)
+            print("turn servos off")
+            pi.set_servo_pulsewidth(servo["GPIO"], SETTINGS["SERVO_OFF"])
 
-        operateFan(0)
         # turn fan off ...
-        print("...for the night")
+        operateFan(0)
         utils.turnOffLeds(pi)
-    
-    return 0
+        print("...for the night")
+
+    return [date, temperature, humidity]
 
 if __name__ == "__main__":
     try:
         timestamp = utils.readTime()
         print("\n>>>>>>>>>> {} greenhouse started >>>>>>>>>>".format(timestamp))
         # execute functions
-        temperature = regulateTemperature()
+        date, temperature, humidity = regulateTemperature()
         moisture = measureMoisture()
 
-        print(u"timestamp: {}, temperature: {:g}*C, moisture: {}".format(timestamp, temperature, moisture))
+        print("{}: temperature: {:g}*C, humidity {:g}%, moisture: {}".format(date, temperature, humidity, moisture))
         timestamp = utils.readTime()
         print("<<<<<<<<<< {} greenhouse ended <<<<<<<<<<\n".format(timestamp))
     
     finally:
-        print("clean up PIG") 
+        print("clean up PIG")
         pi.stop()

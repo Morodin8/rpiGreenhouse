@@ -23,7 +23,7 @@ import DHT
 
 SETTINGS = {
     "DHT_GPIO":                 27,                 # GPIO Number (BCM) of the DHT Sensor
-    "DHT_SENSOR":               DHT.DHTAUTO,        # DHT.DHT11, DHT.DHTXX or DHT.DHTAUTO
+    "DHT_SENSOR":               DHT.DHT11,          # DHT.DHT11, DHT.DHTXX or DHT.DHTAUTO
     "FAN_GPIO":                 5,                  # GPIO Number (BCM) for the Relay
     "FAN_THRESHOLD":            35,                 # in Celsius. Above this value, the fan will be turned on
     "THRESHOLD_HOUR":           14,                 # hour to use PM WINDOW_THRESHOLD
@@ -51,7 +51,8 @@ SETTINGS = {
     "SERVO_MIN_WIDTH":          500,                # most anti-clockwise
     "SERVO_MAX_WIDTH":          2500,               # most clockwise
     "SERVO_ZERO_DEGREES":       1500,
-    "EXTREME_WET":              300,                # extreme wet - average analog value of all sensors
+    "SERVO_OFF":                0,
+    "EXTREME_WET":              400,                # extreme wet - average analog value of all sensors
     "EXTREME_DRY":              800,                # extreme dry - average analog value of all sensors
     "OPERATE_FROM":             7,                  # read moisture and operate windows from hour
     "OPERATE_UNTIL":            21,                 # read moisture and operate windows until hour
@@ -59,7 +60,7 @@ SETTINGS = {
         {
             "LED_GPIO":         22,
             "GPIO":             23,                 # GPIO Number (BCM) for the Relay"
-            "WATERING_FACTOR":  75,                 # Calculate seconds pump should be turned on based on moisture reading, higher means less water
+            "WATERING_FACTOR":  67,                 # Calculate seconds pump should be turned on based on moisture reading, higher means less water
             "WATERING_TIME":    7,                  # Seconds, default pump should be turned on
             "MIN_WATER":        4                   # Seconds, minimum pump should be turned on
         },
