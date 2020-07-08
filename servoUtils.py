@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #encoding: utf-8
 
-# @Morodin 14/04/202
+# @Morodin 14/04/2020
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,6 +20,79 @@
 # under the License.
 
 from config import SETTINGS
+import time
+
+def operateWindow(pi, isClose, servo):
+    if not pi.connected:
+        print("Failed to connect to pigpio. Leaving window\n")
+        return
+
+    if isClose:
+        angle = servo["CLOSE_ANGLE"]
+    else:
+        angle = servo["OPEN_ANGLE"]
+
+    print("{} GPIO: {}, Angle: {}".format(servo["NAME"], servo["GPIO"], angle))
+    pulseWidth = calcPulseWidth(angle, servo["ROTATION"])
+
+    if (pulseWidth == 0):
+        print("Trying to turn servo beyond it's limit, Leaving window.")
+    else:
+        softOperate(pi, isClose, servo, pulseWidth)
+        safeSetPulseWidth(pi, servo, pulseWidth)
+
+def shouldCloseWindow(timestamp, windowThreshold, temperature, servo):
+    openWindow = False
+    closeWindow = True
+
+    if timestamp.hour < SETTINGS["THRESHOLD_HOUR"]:
+        if windowThreshold[0] == 0:
+            ampmThreshold = float(servo["WINDOW_THRESHOLD"][0])
+        else:
+            ampmThreshold = float(windowThreshold[0])
+    else:
+        if windowThreshold[1] == 0:
+            ampmThreshold = float(servo["WINDOW_THRESHOLD"][1])
+        else:
+            ampmThreshold = float(windowThreshold[1])
+
+    print("THRESHOLD_HOUR: {}, hour: {}. Use {:g}*C threshold".format(SETTINGS["THRESHOLD_HOUR"], timestamp.hour, ampmThreshold))
+
+    if temperature >= ampmThreshold:
+        return openWindow
+    else:
+        if timestamp.month == SETTINGS["TRIX_MONTH"]:
+            if SETTINGS["TRIX_HOUR_OPEN"] <= timestamp.hour <= SETTINGS["TRIX_HOUR_CLOSE"]:
+                if temperature >= SETTINGS["TRIX_THRESHOLD"]:
+                    print("trix open window at{:g}*C".format(SETTINGS["TRIX_THRESHOLD"]))
+                    utils.blinkLed(pi, SETTINGS["TEMP_LED"], 30, 0.1)
+                    return openWindow
+
+        return closeWindow
+
+def softOperate(pi, isClose, servo, pulseWidth):
+    try:
+        currentWidth = float(pi.get_servo_pulsewidth(servo["GPIO"]))
+        print("currentWidth: {}".format(currentWidth))
+        if currentWidth == 0:
+            currentWidth = setCurrentWidth(isClose, currentWidth, servo)
+
+    except:
+        currentWidth = setCurrentWidth(isClose, 0, servo)
+        safeSetPulseWidth(pi, servo, currentWidth)
+
+    if currentWidth < pulseWidth:
+        inc = SETTINGS["SERVO_INCREMENT"]
+    else:
+        inc = SETTINGS["SERVO_INCREMENT"] * -1
+
+    setWidth = currentWidth
+    print("setWidth: {}, pulseWidth: {}, inc: {}\n".format(setWidth, pulseWidth, inc))
+
+    while (pulseWidth > setWidth and inc > 0) or (pulseWidth < setWidth and inc < 0):
+        safeSetPulseWidth(pi, servo, setWidth)
+        setWidth += inc
+        time.sleep(0.05)
 
 def calcPulseWidth(angle, servoRotation):
     operatingWidth = (SETTINGS["SERVO_MAX_WIDTH"] - SETTINGS["SERVO_MIN_WIDTH"]) / 2
@@ -50,7 +123,10 @@ def calcPulseWidth(angle, servoRotation):
     return pulseWidth
 
 def safeSetPulseWidth(pi, servo, width):
-    if (width < SETTINGS["SERVO_MIN_WIDTH"]):
+    if (width == SETTINGS["SERVO_OFF"]):
+        print("Turning servo off")
+        setWidth = SETTINGS["SERVO_OFF"]
+    elif (width < SETTINGS["SERVO_MIN_WIDTH"]):
         print("Cannot set below {}. Width: {}".format(SETTINGS["SERVO_MIN_WIDTH"], width))
         setWidth = SETTINGS["SERVO_ZERO_DEGREES"]
     elif (width > SETTINGS["SERVO_MAX_WIDTH"]):

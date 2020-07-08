@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #encoding: utf-8
 
-# @Morodin 14/04/202
+# @Morodin 14/04/2020
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -29,6 +29,7 @@ pi = pigpio.pi()
 
 def measureMoisture():
     pump = SETTINGS["PUMP"]
+
     try:
         average = MCP3008.readMoisture(pi)
     except:
@@ -36,7 +37,6 @@ def measureMoisture():
         
     if average > 0:
         average = round(average, 2)
-        print("Moisture: {}".format(average))
         wateringTime = round(average / pump["WATERING_FACTOR"], 2)
         
         if wateringTime < pump["MIN_WATER"]:
@@ -49,7 +49,7 @@ def measureMoisture():
             blinkLed(sensor["LED"], 20, 0.2)
     
     # turn pump on for some seconds
-    print("turn pump on for {} seconds".format(wateringTime))
+    print("{}: moisture: {} - turn pump on for {} seconds".format(timestamp, average, wateringTime))
     pi.set_mode(pump["LED_GPIO"], pigpio.OUTPUT)
     pi.set_mode(pump["GPIO"], pigpio.OUTPUT)
     pi.write(pump["LED_GPIO"], 1)
@@ -69,5 +69,5 @@ if __name__ == "__main__":
         print("<<<<<<<<<< {} waterPlants ended <<<<<<<<<<\n".format(timestamp))
     
     finally:
-        print("stop PIG\n\n") 
+        print("clean up PIG")
         pi.stop()

@@ -71,11 +71,16 @@ class sensor:
       self._lastHumidity = 0.0
 
    def _datum(self):
-      if self._status == DHT_TIMEOUT:
-         print("Status: DHT_TIMEOUT. Use last values - lastStatus: {}, lastTemperature: {}, lastHumidity: {}".format(self._lastStatus, self._lastTemperature, self._lastHumidity))
-         self._status = self._lastStatus
-         self._temperature = self._lastTemperature
-         self._humidity = self._lastHumidity
+      if (self._override):
+          if (self._status == DHT_TIMEOUT):
+             print("Status: DHT_TIMEOUT. Use last values - lastStatus: {}, lastTemperature: {}, lastHumidity: {}".format(self._lastStatus, self._lastTemperature, self._lastHumidity))
+             self._status = self._lastStatus
+             self._temperature = self._lastTemperature
+             self._humidity = self._lastHumidity
+
+             if (self._lastStatus != DHT_TIMEOUT):
+                 print("Override status to DHT_GOOD")
+                 self._status = DHT_GOOD
 
       return ((self._timestamp, self._gpio, self._status,
               self._temperature, self._humidity))
@@ -88,10 +93,11 @@ class sensor:
             print("Override b1 check. b1: {}".format(b1))
          valid = True
       else:
-         print("b1: {}, b3: {}, t: {}, h: {}".format(b1, b3, t, h))
          valid = False
-         self._lastTemperature = t
-         self._lastHumidity = h
+         if (self._lastTemperature == 0):
+             print("Setting _last properties for override - b1: {}, b3: {}, t: {}, h: {}".format(b1, b3, t, h))
+             self._lastTemperature = t
+             self._lastHumidity = h
 
       return (valid, t, h)
 

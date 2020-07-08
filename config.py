@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #encoding: utf-8
 
-# @Morodin 14/04/202
+# @Morodin 14/04/2020
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -24,14 +24,16 @@ import DHT
 SETTINGS = {
     "DHT_GPIO":                 27,                 # GPIO Number (BCM) of the DHT Sensor
     "DHT_SENSOR":               DHT.DHT11,          # DHT.DHT11, DHT.DHTXX or DHT.DHTAUTO
+    "DHT_READS":                50,                 # number of retries if DHT fails to read temperature
     "FAN_GPIO":                 5,                  # GPIO Number (BCM) for the Relay
     "FAN_THRESHOLD":            35,                 # in Celsius. Above this value, the fan will be turned on
     "THRESHOLD_HOUR":           14,                 # hour to use PM WINDOW_THRESHOLD
-    "WINDOW_THRESHOLD":         [22, 25],           # in Celsius. Above this value, windows will be opened by the servo, [AM, PM]
     "TRIX_THRESHOLD":           18,                 # trix open if above this temperature
     "TRIX_MONTH":               9,                  # from this month we trick the plants into fruiting early
-    "TRIX_HOUR_OPEN":           18,                 # use trix temperature to open from this hour
-    "TRIX_HOUR_CLOSE":          19,                 # revert back to normal threshold from this hour
+    "TRIX_HOUR_OPEN":           19,                 # use trix temperature to open from this hour
+    "TRIX_HOUR_CLOSE":          20,                 # revert back to normal threshold from this hour
+    "OPERATE_FROM":             7,                  # operate windows from hour
+    "OPERATE_UNTIL":            21,                 # operate windows until hour
     "TEMP_LED":                 24,
     "SERVOS": [
         {
@@ -39,13 +41,15 @@ SETTINGS = {
             "GPIO":             12,                 # GPIO Numbers (BCM), which opens the windows
             "ROTATION":         270,                # most servos 180*, but 270* & 360* also valid
             "OPEN_ANGLE":       54,                 # degree, how much the servo will open the window
-            "CLOSE_ANGLE":      0,                  # degree, how much the servo will close the window
+            "CLOSE_ANGLE":      5,                  # degree, how much the servo will close the window
+            "WINDOW_THRESHOLD": [22, 25]            # in Celsius. Above this value, windows will be opened by the servo, [AM, PM]
         }, {
             "NAME":             "Side",
             "GPIO":             13,
             "ROTATION":         270,
             "OPEN_ANGLE":       -54,
-            "CLOSE_ANGLE":      0
+            "CLOSE_ANGLE":      -3,
+            "WINDOW_THRESHOLD": [22, 25]            # in Celsius. Above this value, windows will be opened by the servo, [AM, PM]
         }],
     "SERVO_INCREMENT":          10,                 # move servo in increments for smooth motion
     "SERVO_MIN_WIDTH":          500,                # most anti-clockwise
@@ -54,15 +58,13 @@ SETTINGS = {
     "SERVO_OFF":                0,
     "EXTREME_WET":              400,                # extreme wet - average analog value of all sensors
     "EXTREME_DRY":              800,                # extreme dry - average analog value of all sensors
-    "OPERATE_FROM":             7,                  # read moisture and operate windows from hour
-    "OPERATE_UNTIL":            21,                 # read moisture and operate windows until hour
     "PUMP": 
         {
             "LED_GPIO":         22,
             "GPIO":             23,                 # GPIO Number (BCM) for the Relay"
-            "WATERING_FACTOR":  67,                 # Calculate seconds pump should be turned on based on moisture reading, higher means less water
-            "WATERING_TIME":    7,                  # Seconds, default pump should be turned on
-            "MIN_WATER":        4                   # Seconds, minimum pump should be turned on
+            "WATERING_FACTOR":  10,                 # Calculate seconds pump should be turned on based on moisture reading, higher means less water
+            "WATERING_TIME":    45,                 # Seconds, default pump should be turned on
+            "MIN_WATER":        30                  # Seconds, minimum pump should be turned on
         },
     "SENSORS": [
         {
