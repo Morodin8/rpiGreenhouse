@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #encoding: utf-8
 
-# @Morodin 14/04/202
+# @Morodin 14/04/2020
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,6 +20,7 @@
 # under the License.
 
 from config import SETTINGS
+import utils
 import pigpio
 import time
 import os
@@ -27,26 +28,16 @@ import os
 if __name__ == "__main__":
     pi = pigpio.pi()
 
-    def turnOffLeds():
-        pins = [SETTINGS["PUMP"]["LED_GPIO"]]
-        pins.append(SETTINGS["TEMP_LED"])
-        for sensor in SETTINGS["SENSORS"]:
-            pins.append(sensor["LED"])
-            
-        for pin in pins:
-            pi.set_mode(pin, pigpio.OUTPUT)
-            pi.write(pin, 0)
-
     def cbfReboot(gpio, level, tick):
         print("Callback", gpio, level, tick)
-        turnOffLeds()
+        utils.turnOffLeds()
         os.system("sudo shutdown -r now")
 
     def cbfWater(gpio, level, tick):
         print("Callback", gpio, level, tick)
         pi.write(SETTINGS["PUMP"]["LED_GPIO"], level ^ 1)
         pi.write(SETTINGS["PUMP"]["GPIO"], level)
-        turnOffLeds()
+        utils.turnOffLeds()
 
     if not pi.connected:
         print("Failed to connect to pigpio.")
@@ -65,6 +56,7 @@ if __name__ == "__main__":
 
             cb1 = pi.callback(SETTINGS["BUTTON_REBOOT"], pigpio.RISING_EDGE, cbfReboot)
             cb2 = pi.callback(SETTINGS["BUTTON_WATER"], pigpio.EITHER_EDGE, cbfWater)
+
             while True:
                 time.sleep(1.11)
 

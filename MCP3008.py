@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #encoding: utf-8
 
-# @Morodin 14/04/202
+# @Morodin 14/04/2020
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -41,11 +41,12 @@ def readSensor(pi, adc, sensor):
         v += m
     v /= 10.0
     value += round(v, 1)
-    print("readings: {}, average: {}".format(log, value))
+    print("readings: {} = {}".format(log, value))
     return value
 
 def readMoisture(pi):
     try:
+        failed = 0
         total = 0.0
         adc = pi.spi_open(0, 1e6) # CE0
         
@@ -55,22 +56,27 @@ def readMoisture(pi):
             if value is not None:
                 total += value
                 if value > SETTINGS["EXTREME_DRY"]:
-                    utils.blinkLed(pi, sensor["LED"], 10, 0.2)
                     print("too dry\n")
+                    pi.set_mode(sensor["LED"], pigpio.OUTPUT)
+                    utils.blinkLed(pi, sensor["LED"], 10, 0.1)
                 elif value < SETTINGS["EXTREME_WET"]:
                     print("too wet\n")
-                    pi.set_mode(sensor["LED"], pigpio.OUTPUT)
-                    pi.write(sensor["LED"], 1)
+                    utils.blinkLed(pi, sensor["LED"], 5, 0.5)
                 else:
                     print("Moisture just right\n")
-                    pi.set_mode(sensor["LED"], pigpio.OUTPUT)
-                    pi.write(sensor["LED"], 0)
-                    
-            else:
-                # failed to get moisture reading
-                return 0
 
-        return round(total / float(len(SETTINGS["SENSORS"])), 1)
+            else:
+                print("failed to get moisture reading\n")
+                failed += 1
+
+        if failed == len(SETTINGS["SENSORS"]):
+            return 0
+
+        return round(total / float(len(SETTINGS["SENSORS"]) - failed), 1)
    
     finally:
+        for sensor in SETTINGS["SENSORS"]:
+            pi.set_mode(sensor["LED"], pigpio.OUTPUT)
+            pi.write(sensor["LED"], 0)
+
         pi.spi_close(adc)
