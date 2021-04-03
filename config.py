@@ -24,16 +24,15 @@ import DHT
 SETTINGS = {
     "DHT_GPIO":                 27,                 # GPIO Number (BCM) of the DHT Sensor
     "DHT_SENSOR":               DHT.DHT11,          # DHT.DHT11, DHT.DHTXX or DHT.DHTAUTO
-    "DHT_READS":                50,                 # number of retries if DHT fails to read temperature
+    "DHT_RETRIES":              10,                 # number of retries if DHT fails to read temperature due to timeout
+    "DHT_READS":                1,                  # number of read retries if DHT fails to read temperature due to checksum
     "FAN_GPIO":                 5,                  # GPIO Number (BCM) for the Relay
     "FAN_THRESHOLD":            35,                 # in Celsius. Above this value, the fan will be turned on
     "THRESHOLD_HOUR":           14,                 # hour to use PM WINDOW_THRESHOLD
     "TRIX_THRESHOLD":           18,                 # trix open if above this temperature
     "TRIX_MONTH":               9,                  # from this month we trick the plants into fruiting early
-    "TRIX_HOUR_OPEN":           19,                 # use trix temperature to open from this hour
-    "TRIX_HOUR_CLOSE":          20,                 # revert back to normal threshold from this hour
-    "OPERATE_FROM":             7,                  # operate windows from hour
-    "OPERATE_UNTIL":            21,                 # operate windows until hour
+    "TRIX_HOUR_OPEN":           18,                 # use trix temperature to open from this hour
+    "TRIX_HOUR_CLOSE":          19,                 # revert back to normal threshold from this hour
     "TEMP_LED":                 24,
     "SERVOS": [
         {
@@ -58,6 +57,8 @@ SETTINGS = {
     "SERVO_OFF":                0,
     "EXTREME_WET":              400,                # extreme wet - average analog value of all sensors
     "EXTREME_DRY":              800,                # extreme dry - average analog value of all sensors
+    "OPERATE_FROM":             7,                  # operate windows from hour
+    "OPERATE_UNTIL":            21,                 # operate windows until hour
     "PUMP": 
         {
             "LED_GPIO":         22,
