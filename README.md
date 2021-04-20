@@ -19,7 +19,7 @@ If the Python part of the install fails it may be because you need the setup too
 
 sudo apt install python-setuptools python3-setuptools
 
-2.2 Start deamon on boot
+2.2 Start daemon on boot
 
 sudo systemctl enable pigpiod
 
@@ -55,7 +55,6 @@ sudo vi /etc/logrotate.conf
 
 crontab -e
 
-# m h  dom mon dow   command
 @reboot       sudo python /home/pi/greenhouse/button.py >> /home/pi/log/greenhouse.log 2>&1
 45 07 * * *   sudo python /home/pi/greenhouse/waterPlants.py >> /home/pi/log/greenhouse.log 2>&1
 10 *  * * *   sudo python /home/pi/greenhouse/readTemperature.py >> /home/pi/log/greenhouse.log 2>&1
