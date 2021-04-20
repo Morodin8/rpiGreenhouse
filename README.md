@@ -55,7 +55,11 @@ wget https://raw.githubusercontent.com/tutRPi/Raspberry-Pi-Greenhouse/master/MCP
 ```
 mkdir log
 sudo vi /etc/logrotate.conf
+```
 
+Insert this:
+
+```
 /home/pi/log/greenhouse.log {
     daily
     missingok
@@ -71,7 +75,11 @@ sudo vi /etc/logrotate.conf
 
 ```
 crontab -e
+```
 
+Insert this:
+
+```
 @reboot       sudo python /home/pi/greenhouse/button.py >> /home/pi/log/greenhouse.log 2>&1
 45 07 * * *   sudo python /home/pi/greenhouse/waterPlants.py >> /home/pi/log/greenhouse.log 2>&1
 10 *  * * *   sudo python /home/pi/greenhouse/readTemperature.py >> /home/pi/log/greenhouse.log 2>&1
