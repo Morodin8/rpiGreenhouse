@@ -52,14 +52,15 @@ sudo vi /etc/logrotate.conf
 }
 
 7. Run code
-
-crontab -e
 `
+crontab -e
+
 @reboot       sudo python /home/pi/greenhouse/button.py >> /home/pi/log/greenhouse.log 2>&1
 45 07 * * *   sudo python /home/pi/greenhouse/waterPlants.py >> /home/pi/log/greenhouse.log 2>&1
 10 *  * * *   sudo python /home/pi/greenhouse/readTemperature.py >> /home/pi/log/greenhouse.log 2>&1
 15 *  * * *   sudo python /home/pi/greenhouse/measureMoisture.py >> /home/pi/log/greenhouse.log 2>&1
 `
+
 8. Config
 
 sudo raspi-config
