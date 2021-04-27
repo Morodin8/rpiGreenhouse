@@ -43,7 +43,7 @@ def measureMoisture():
             print("Watering time, {}, too low. Use minimum watering time: {}".format(wateringTime, pump["MIN_WATER"]))
             wateringTime = pump["MIN_WATER"]
     else:
-        wateringTime = SETTINGS["WATERING_TIME"]
+        wateringTime = pump["WATERING_TIME"]
         print("Failed to get moisture reading, use default watering time {}".format(wateringTime))
         for sensor in SETTINGS["SENSORS"]:
             blinkLed(sensor["LED"], 20, 0.2)
