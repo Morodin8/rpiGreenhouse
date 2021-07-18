@@ -46,7 +46,7 @@ def measureMoisture():
         wateringTime = pump["WATERING_TIME"]
         print("Failed to get moisture reading, use default watering time {}".format(wateringTime))
         for sensor in SETTINGS["SENSORS"]:
-            blinkLed(sensor["LED"], 20, 0.2)
+            utils.blinkLed(pi, sensor["LED"], 20, 0.2)
     
     # turn pump on for some seconds
     print("{}: moisture: {} - turn pump on for {} seconds".format(timestamp, average, wateringTime))
